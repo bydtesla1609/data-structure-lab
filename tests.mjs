@@ -74,6 +74,8 @@ eq(last('critical','critical',{}).duration,9);
 eq(last('critical','critical',{}).critical.map(e=>`${e.u}${e.v}`),['02','23','35']);
 eq(last('critical','critical',{n:'4',edges:'A C 3; B D 5'}).duration,5);
 eq(last('critical','critical',{n:'4',edges:''}).duration,0);
+assert.throws(()=>run('critical','critical',{n:'2',edges:'A B 0.1'}));assertions++;
+ok(run('doubly','find',{}).at(0).edges.some(e=>e.from==='0'&&e.to==='head'));
 eq(last('graph-traverse','bfs',{n:'4',edges:'A B',source:'A'}),['A','B','C','D']);
 eq(last('graph-traverse','dfs',{n:'4',edges:'A B',source:'C'}),['C','A','B','D']);
 // Independent small-graph shortest paths and MST checks (seeded, reproducible).
