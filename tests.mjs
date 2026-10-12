@@ -1,0 +1,83 @@
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import {labs,prefix} from './algorithms.js';
+let assertions=0;const eq=(a,b)=>{assert.deepEqual(a,b);assertions++;};const ok=v=>{assert.ok(v);assertions++;};
+const run=(id,key,params={})=>{const o=labs[id].find(x=>x.key===key);return o.run({...Object.fromEntries(o.fields.map(f=>[f.key,f.value])),...params});};
+const last=(id,key,p)=>run(id,key,p).at(-1).result;
+const topics=(await Promise.all(['linear','tree','graph'].map(p=>readFile(new URL(`content-${p}.json`,import.meta.url),'utf8').then(JSON.parse)))).flat();
+eq(new Set(topics.map(t=>t.id)).size,24);
+let experiments=0,frameCount=0;
+for(const topic of topics){ok(labs[topic.id]?.length);ok(topic.operations.length>0&&topic.bullets.length>0&&topic.refs.includes('PDF'));ok(topic.quiz.answer>=0&&topic.quiz.answer<topic.quiz.options.length);for(const o of labs[topic.id]){const frames=run(topic.id,o.key);experiments++;frameCount+=frames.length;ok(frames.length>0);for(const f of frames){ok(typeof f.note==='string'&&f.note.length>0);if(f.kind==='graph'){const ids=new Set(f.nodes.map(n=>n.id));eq(ids.size,f.nodes.length);for(const edge of f.edges)ok(ids.has(edge.from)&&ids.has(edge.to));}if(f.kind==='matrix')ok(f.matrix.every(r=>r.length===f.matrix[0].length));}}}
+eq(last('sequence','insert',{values:'1,2,3',position:'2',value:'9'}),[1,9,2,3]);
+eq(last('sequence','insert',{values:'',position:'1',value:'9'}),[9]);
+eq(last('sequence','delete',{values:'1',position:'1'}),[]);
+eq(last('sequence','find',{values:'1,2',value:'8'}),0);
+eq(last('sequence','reverse',{values:''}),[]);
+eq(last('linked','reverse',{values:'1,2,3'}),[3,2,1]);
+eq(last('static-list','commands',{}),[99,10,77,30]);
+const slotFrames=run('static-list','commands',{});eq(slotFrames.at(-1).nodes.find(n=>n.label==='99').sub,'槽位 2');eq(slotFrames.at(-1).nodes.find(n=>n.label==='10').sub,'槽位 1');
+eq(last('static-list','insert',{values:'1,2',capacity:'2'}),false);
+eq(last('static-list','delete',{values:'1',capacity:'2',position:'1'}),[]);
+eq(last('traversal','iterative-in',{}),last('traversal','in',{}));
+eq(last('binary-tree','mirror',{}),['A','C','F','B','E','D']);
+eq(last('stack-apps','two-stacks',{}),[10,20,30]);
+const queueTransfer=run('stack-apps','two-stacks',{commands:'E 10; E 20; D'}).filter(f=>f.line===1);ok(queueTransfer.every(f=>JSON.stringify(f.rows[2].values)==='[10,20]'));
+eq(last('linked','kth',{values:'1,2,3,4',position:'4'}),1);
+eq(last('sequence','dedupe',{values:'1,1,2,2,2,4'}),[1,2,4]);
+eq(last('sequence','merge',{values:'',other:'1,3'}),[1,3]);
+eq(last('stack','push',{values:'1,2',capacity:'2'}),false);
+eq(last('stack','pop',{values:''}),false);
+eq(last('queue','enqueue',{values:'1,2,3,4,5',capacity:'6',front:'4'}),false);
+eq(last('queue','dequeue',{values:'',capacity:'6'}),false);
+eq(run('queue','enqueue',{}).at(-1).vars,{front:4,rear:2,length:4,capacity:6});
+eq(last('stack-apps','brackets',{text:'([)]'}),false);
+eq(last('stack-apps','brackets',{text:''}),true);
+eq(last('stack-apps','brackets',{text:'{[()]}'}),true);
+eq(last('stack-apps','postfix',{}),9);
+eq(last('stack-apps','postfix',{text:'8 2 -'}),6);
+eq(last('stack-apps','recursion',{n:'0'}),1);
+eq(last('stack-apps','recursion',{n:'5'}),120);
+eq(last('string','substring',{text:'abcd',position:'5',length:'0'}),'');
+eq(last('string','compare',{text:'ab',other:'abc'}),-1);
+eq(last('string','concat',{text:'a',other:'b'}),'ab');
+eq(last('kmp','kmp',{}),6);
+eq(last('kmp','prefix',{pattern:'aaaab'}),{pi:[0,1,2,3,0],next:[0,1,2,3,4],nextval:[0,0,0,0,4]});
+// Exhaustive small alphabets: compare both matchers against the language's independent search.
+const strings=[''];for(let n=1;n<=5;n++)for(let mask=0;mask<2**n;mask++)strings.push(Array.from({length:n},(_,i)=>(mask>>i)&1?'a':'b').join(''));
+for(const s of strings)for(const p of strings.filter(x=>x.length>0&&x.length<=3)){eq(last('kmp','kmp',{text:s,pattern:p}),s.indexOf(p)+1);eq(last('kmp','naive',{text:s,pattern:p}),s.indexOf(p)+1);const pi=prefix([...p]);for(let i=0;i<p.length;i++){let longest=0;for(let k=1;k<=i;k++)if(p.slice(0,k)===p.slice(i+1-k,i+1))longest=k;eq(pi[i],longest);}}
+for(let n=2;n<=6;n++)for(let i=1;i<=n;i++)for(let j=1;j<=n;j++){for(const mode of ['symmetric','lower','upper','band']){const f=run('matrix',mode,{n:String(n),i:String(i),j:String(j)}).at(-1),k=f.result,a=f.rows[0].values;if(k<0)eq(mode,'band');else{ok(k<a.length);const expected=mode==='symmetric'?10*Math.max(i,j)+Math.min(i,j):mode==='lower'&&j>i||mode==='upper'&&i>j?'c':10*i+j;eq(a[k],expected);}}}
+eq(last('matrix','sparse',{matrix:'0 2 0; 3 0 4'}),[[1,2,3],[2,1,2],[3,2,4]]);
+eq(last('traversal','pre',{}),['A','B','D','E','C','F']);
+eq(last('traversal','in',{}),['D','B','E','A','C','F']);
+eq(last('traversal','post',{}),['D','E','B','F','C','A']);
+eq(last('traversal','level',{}),['A','B','C','D','E','F']);
+eq(last('threaded','thread',{}),last('traversal','in',{}));
+eq(last('binary-tree','properties',{tree:''}).n0,0);
+eq(last('binary-tree','properties',{tree:'A B C'}).complete,true);
+eq(last('binary-tree','properties',{tree:'A # C'}).complete,false);
+eq(last('huffman','build',{}).wpl,77);
+eq(last('huffman','build',{weights:'1,1'}).wpl,2);
+const parents=last('union-find','union',{});eq(parents.filter(x=>x<0).sort((a,b)=>a-b),[-6,-1]);eq(parents[3],0);
+eq(last('mst','prim',{}).weight,13);eq(last('mst','kruskal',{}).weight,13);
+eq(last('mst','prim',{n:'4',edges:'A B 1; C D 2'}).connected,false);
+eq(last('mst','kruskal',{n:'4',edges:'A B 1; C D 2'}).connected,false);
+eq(last('shortest','dijkstra',{}).dist,[0,3,2,8,10,13]);
+eq(last('shortest','dijkstra',{}).path,['A','C','B','D','E','F']);
+eq(last('shortest','floyd',{}).dist[0],[0,3,2,8,10,13]);
+eq(last('shortest','floyd',{n:'3',directed:'1',edges:'A B 2; B C -3; A C 9'}).dist[0],[0,2,-1]);
+eq(last('shortest','floyd',{n:'3',directed:'1',edges:'A B 1; B C -3; C A 1'}).negativeCycle,true);
+eq(last('shortest','dijkstra',{n:'3',edges:'A B 1',target:'C'}).path,[]);
+eq(last('dag','topo',{n:'4',edges:'A B; B C; C A'}).cycle,true);
+eq(last('dag','topo',{n:'3',edges:'A B; B C'}).unique,true);
+eq(last('dag','topo',{n:'3',edges:'A C; B C'}).unique,false);
+eq(last('critical','critical',{}).duration,9);
+eq(last('critical','critical',{}).critical.map(e=>`${e.u}${e.v}`),['02','23','35']);
+eq(last('critical','critical',{n:'4',edges:'A C 3; B D 5'}).duration,5);
+eq(last('critical','critical',{n:'4',edges:''}).duration,0);
+eq(last('graph-traverse','bfs',{n:'4',edges:'A B',source:'A'}),['A','B','C','D']);
+eq(last('graph-traverse','dfs',{n:'4',edges:'A B',source:'C'}),['C','A','B','D']);
+// Independent small-graph shortest paths and MST checks (seeded, reproducible).
+let seed=42;const rnd=n=>(seed=(seed*1664525+1013904223)>>>0)%n;
+for(let trial=0;trial<15;trial++){const n=4,edges=[];for(let u=0;u<n;u++)for(let v=u+1;v<n;v++)edges.push({u,v,w:rnd(10)});const p={n:String(n),edges:edges.map(e=>`${String.fromCharCode(65+e.u)} ${String.fromCharCode(65+e.v)} ${e.w}`).join(';'),target:'D'};const floyd=last('shortest','floyd',p).dist;for(let s=0;s<n;s++)eq(last('shortest','dijkstra',{...p,source:String.fromCharCode(65+s)}).dist,floyd[s]);let min=Infinity;for(let mask=0;mask<1<<edges.length;mask++){const es=edges.filter((_,i)=>mask>>i&1);if(es.length!==n-1)continue;const seen=new Set([0]);let changed=true;while(changed){changed=false;for(const e of es)if(seen.has(e.u)!==seen.has(e.v)){seen.add(e.u);seen.add(e.v);changed=true;}}if(seen.size===n)min=Math.min(min,es.reduce((a,e)=>a+e.w,0));}eq(last('mst','prim',p).weight,min);eq(last('mst','kruskal',p).weight,min);}
+for(const [id,key,p] of [['sequence','delete',{values:'',position:'1'}],['linked','kth',{position:'0'}],['sequence','insert',{position:'1.5'}],['sequence','dedupe',{values:'2,1'}],['shortest','dijkstra',{edges:'A B -1'}],['critical','critical',{edges:'A B; B A'}],['traversal','rebuild',{pre:'A B C',in:'C A B'}],['binary-tree','properties',{tree:'A # C D'}],['graph-storage','represent',{edges:'A B; B A'}],['stack-apps','postfix',{text:'2 0 /'}]]){assert.throws(()=>run(id,key,p));assertions++;}
+console.log(`PASS: ${topics.length} topics, ${experiments} experiment defaults, ${frameCount} default frames; ${assertions} assertions including exhaustive string matching, matrix indexing, independent MST checks, shortest paths, invalid inputs.`);

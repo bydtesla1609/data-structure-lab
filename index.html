@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="从线性表到图：用逐步动画、可编辑输入和例题推演理解数据结构。">
+  <meta name="theme-color" content="#f6f7f9"><title>结构之间 · 数据结构交互实验室</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 80'%3E%3Crect width='80' height='80' rx='20' fill='%231d6b56'/%3E%3Cpath d='M20 24h40M20 40h40M20 56h40' stroke='white' stroke-width='7'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip" href="#main">跳到实验区</a>
+  <aside id="sidebar">
+    <a class="brand" href="#sequence"><span class="brand-icon">≋</span><span>结构之间<small>DATA STRUCTURE LAB</small></span></a>
+    <button class="map-button" id="map-button"><span>◫</span> 学习地图 <span class="arrow">↗</span></button>
+    <label class="search"><span>⌕</span><input id="search" placeholder="搜索结构或算法" aria-label="搜索知识点"><kbd>/</kbd></label>
+    <nav id="nav" aria-label="章节导航"></nav>
+    <div class="sidebar-bottom"><div><span class="live-dot"></span>你的学习进度 <b id="progress-count">0 / 24</b></div><progress id="progress" max="24" value="0"></progress><small>进度仅保存在当前浏览器</small></div>
+  </aside>
+  <div class="workspace">
+    <header class="topbar"><button id="menu" class="icon-button" aria-label="展开或收起章节导航">☰</button><span id="breadcrumb">数据结构 / 线性表</span><div><span class="scope">考研 · 第 2—6 章</span><a href="https://github.com/bydtesla1609/data-structure-lab" target="_blank" rel="noreferrer">GitHub ↗</a></div></header>
+    <main id="main" tabindex="-1"><p class="loading">正在准备实验室…</p></main>
+    <footer>结构之间 · 原创交互讲解，按《2025 王道数据结构考研复习指导》第 2—6 章组织。<br>示例数据为自编；下标、位序与适用条件会在对应实验中明确说明。</footer>
+  </div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
